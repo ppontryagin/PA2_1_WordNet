@@ -16,6 +16,7 @@ public class SAP {
             throw new NullPointerException("Input graph is null!");
 
         g = new Digraph(G);
+
         cache = new HashMap<>();
     }
 
@@ -29,10 +30,7 @@ public class SAP {
 
         @Override
         public String toString() {
-            return "Result{" +
-                    "ancestor=" + ancestor +
-                    ", length=" + length +
-                    '}';
+            return "Result{" + "ancestor=" + ancestor + ", length=" + length + '}';
         }
 
         public int getAncestor() {
@@ -67,8 +65,7 @@ public class SAP {
 
             Pair pair = (Pair) o;
 
-            if (v != pair.v) return false;
-            if (w != pair.w) return false;
+            if (v != pair.v || w != pair.w) return false;
 
             return true;
         }
@@ -82,10 +79,7 @@ public class SAP {
 
         @Override
         public String toString() {
-            return "Pair{" +
-                    "v=" + v +
-                    ", w=" + w +
-                    '}';
+            return "Pair{" + "v=" + v + ", w=" + w + '}';
         }
     }
 
@@ -102,6 +96,7 @@ public class SAP {
     // a common ancestor of v and w that participates in a shortest ancestral path;
     // -1 if no such path
     public int ancestor(int v, int w) {
+
         Pair p = new Pair(v, w);
 
         if (!cache.containsKey(p))
@@ -115,15 +110,20 @@ public class SAP {
         bfdpV = new BreadthFirstDirectedPaths(g, p.getV());
         bfdpW = new BreadthFirstDirectedPaths(g, p.getW());
 
+        if (p.getV() == p.getW()) {
+            cache.put(p, new Result(p.getV(), 0));
+            return;
+        }
+
         int ancestor = -1;
         int length = INFINITY;
 
-        for (int vPoint : bfdpV.pathTo(0)) {
-            if (bfdpW.hasPathTo(vPoint)) {
-                int tempLength = bfdpW.distTo(vPoint) + bfdpV.distTo(vPoint);
+        for (int i = 0; i < g.V(); i++) {
+            if (bfdpV.hasPathTo(i) && bfdpW.hasPathTo(i)) {
+                int tempLength = bfdpV.distTo(i) + bfdpW.distTo(i);
                 if (tempLength < length) {
                     length = tempLength;
-                    ancestor = vPoint;
+                    ancestor = i;
                 }
             }
         }
@@ -136,6 +136,9 @@ public class SAP {
     // length of shortest ancestral path between any vertex in v
     // and any vertex in w; -1 if no such path
     public int length(Iterable<Integer> v, Iterable<Integer> w) {
+
+        if (v == null || w == null)
+            throw new NullPointerException("Input vertices list is null!");
 
         int l = INFINITY;
 
@@ -153,9 +156,11 @@ public class SAP {
     // shortest ancestral path; -1 if no such path
     public int ancestor(Iterable<Integer> v, Iterable<Integer> w) {
 
+        if (v == null || w == null)
+            throw new NullPointerException("Input vertices list is null!");
+
         int l = INFINITY;
         int a = -1;
-
 
         for (int vI : v) {
             for (int wJ : w) {

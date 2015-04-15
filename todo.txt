@@ -1,4 +1,7 @@
-1. SAP: ancstor and length refactor - modularize
-2. SAP: ancestor and length cache values
++ 1. SAP: ancestor and length refactor - modularize
++ 2. SAP: ancestor and length cache values
 3. SAP: make cache size adjustible
 4. SAP: make v,w = w,v
+
+
+6.
