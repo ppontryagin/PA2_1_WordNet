@@ -1,10 +1,12 @@
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class WordNet {
 
     private Digraph hypernymsGraph;
-    private Map<String, Synset> synsetsDict;
+    private Map<String, Set<Integer>> synsetsDict;
     private Map<Integer, String> idSynsetIndex;
     private SAP sap;
 
@@ -24,7 +26,13 @@ public class WordNet {
             String[] nouns = tokLine[1].split("\\s+");
 
             for (String noun : nouns) {
-                synsetsDict.put(noun, new Synset(id, tokLine[2]));
+                if (synsetsDict.containsKey(noun))
+                    synsetsDict.get(noun).add(id);
+                else {
+                    Set<Integer> s = new HashSet<>();
+                    s.add(id);
+                    synsetsDict.put(noun, s);
+                }
             }
 
             idSynsetIndex.put(id, tokLine[1]);
@@ -48,8 +56,26 @@ public class WordNet {
 
         in.close();
 
+        if (!singleRooted())
+            throw new IllegalArgumentException("Not single rooted graph!");
+
+        DirectedCycle cycle = new DirectedCycle(hypernymsGraph);
+        if (cycle.hasCycle())
+            throw new IllegalArgumentException("Cycles found!");
+
         //SAP init
         sap = new SAP(hypernymsGraph);
+    }
+
+    private boolean singleRooted() {
+        int out = 0;
+        for (int v = 0; v < hypernymsGraph.V(); v++) {
+            if (hypernymsGraph.outdegree(v) == 0) {
+                out++;
+            }
+        }
+
+        return (out == 1);
     }
 
     // returns all WordNet nouns
@@ -59,18 +85,33 @@ public class WordNet {
 
     // is the word a WordNet noun?
     public boolean isNoun(String word) {
+        if (word == null)
+            throw new NullPointerException("isNoun");
+
         return synsetsDict.keySet().contains(word);
     }
 
     // distance between nounA and nounB (defined below)
     public int distance(String nounA, String nounB) {
-        return sap.length(synsetsDict.get(nounA).getId(), synsetsDict.get(nounB).getId());
+        if (nounA == null || nounB == null)
+            throw new NullPointerException("distance");
+
+        if (!isNoun(nounA) || !isNoun(nounB))
+            throw new IllegalArgumentException();
+
+        return sap.length(synsetsDict.get(nounA), synsetsDict.get(nounB));
     }
 
     // a synset (second field of synsets.txt) that is the common ancestor of nounA and nounB
     // in a shortest ancestral path (defined below)
     public String sap(String nounA, String nounB) {
-        int idAncestor = sap.ancestor(synsetsDict.get(nounA).getId(), synsetsDict.get(nounB).getId());
+        if (nounA == null || nounB == null)
+            throw new NullPointerException("sap");
+
+        if (!isNoun(nounA) || !isNoun(nounB))
+            throw new IllegalArgumentException();
+
+        int idAncestor = sap.ancestor(synsetsDict.get(nounA), synsetsDict.get(nounB));
         return idSynsetIndex.get(idAncestor);
     }
 
@@ -88,7 +129,6 @@ public class WordNet {
 
             StdOut.printf("length = %d, ancestor = %s\n", length, ancestor);
         }
-
     }
 
     private class Synset {
@@ -110,10 +150,7 @@ public class WordNet {
 
         @Override
         public String toString() {
-            return "Synset{" +
-                    "id=" + id +
-                    ", gloss='" + gloss + '\'' +
-                    '}';
+            return "Synset{" + "id=" + id + ", gloss='" + gloss + '\'' + '}';
         }
     }
 }
