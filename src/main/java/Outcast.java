@@ -1,12 +1,32 @@
 public class Outcast {
+
+    private WordNet wordNet;
+
     // constructor takes a WordNet object
     public Outcast(WordNet wordnet) {
-
+        this.wordNet = wordnet;
     }
 
     // given an array of WordNet nouns, return an outcast
     public String outcast(String[] nouns) {
-        return null;
+
+        int maxDist = 0;
+        String outcast = "";
+
+        for (String wordNetNoun: nouns) {
+            int currDist = 0;
+
+            for (String noun : nouns) {
+                currDist += wordNet.distance(noun, wordNetNoun);
+            }
+
+            if (currDist > maxDist) {
+                maxDist = currDist;
+                outcast = wordNetNoun;
+            }
+        }
+
+        return outcast;
     }
 
     // see test client below

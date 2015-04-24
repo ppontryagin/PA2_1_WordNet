@@ -1,11 +1,9 @@
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class SAP {
 
     private Digraph g;
-    private BreadthFirstDirectedPaths bfdpV;
-    private BreadthFirstDirectedPaths bfdpW;
+    private DeluxeBFSPavel bfs = new DeluxeBFSPavel();
     private Map<Pair, Result> cache;
 
     private static final int INFINITY = Integer.MAX_VALUE;
@@ -83,15 +81,7 @@ public class SAP {
         }
     }
 
-    // length of shortest ancestral path between v and w; -1 if no such path
-    public int length(int v, int w) {
-        Pair p = new Pair(v, w);
 
-        if (!cache.containsKey(p))
-            putPairToCache(p);
-
-        return cache.get(p).getLength();
-    }
 
     // a common ancestor of v and w that participates in a shortest ancestral path;
     // -1 if no such path
@@ -107,30 +97,38 @@ public class SAP {
 
     private void putPairToCache(Pair p) {
 
-        bfdpV = new BreadthFirstDirectedPaths(g, p.getV());
-        bfdpW = new BreadthFirstDirectedPaths(g, p.getW());
-
         if (p.getV() == p.getW()) {
             cache.put(p, new Result(p.getV(), 0));
             return;
         }
 
         int ancestor = -1;
-        int length = INFINITY;
+        int l;
 
-        for (int i = 0; i < g.V(); i++) {
-            if (bfdpV.hasPathTo(i) && bfdpW.hasPathTo(i)) {
-                int tempLength = bfdpV.distTo(i) + bfdpW.distTo(i);
-                if (tempLength < length) {
-                    length = tempLength;
-                    ancestor = i;
-                }
-            }
-        }
+        List<Integer> vI = new ArrayList<>(1);
+        List<Integer> wI = new ArrayList<>(1);
 
-        int l = (length == INFINITY ? -1 : length);
+        vI.add(p.getV());
+        wI.add(p.getW());
+
+        bfs = bfs.getInstance(g, vI, wI);
+
+        ancestor = bfs.getBestAncestor();
+        l = bfs.getBestAncestorLength();
+
+        l = (l == INFINITY ? -1 : l);
 
         cache.put(p, new Result(ancestor, l));
+    }
+
+    // length of shortest ancestral path between v and w; -1 if no such path
+    public int length(int v, int w) {
+        Pair p = new Pair(v, w);
+
+        if (!cache.containsKey(p))
+            putPairToCache(p);
+
+        return cache.get(p).getLength();
     }
 
     // length of shortest ancestral path between any vertex in v
@@ -140,14 +138,11 @@ public class SAP {
         if (v == null || w == null)
             throw new NullPointerException("Input vertices list is null!");
 
-        int l = INFINITY;
+        bfs = bfs.getInstance(g, v, w);
 
-        for (int vI : v) {
-            for (int wJ : w) {
-                if (length(vI, wJ) < l)
-                    l = length(vI, wJ);
-            }
-        }
+        int l = bfs.getBestAncestorLength();;
+
+         l = (l == INFINITY ? -1 : l);
 
         return l == INFINITY ? -1 : l;
     }
@@ -156,22 +151,23 @@ public class SAP {
     // shortest ancestral path; -1 if no such path
     public int ancestor(Iterable<Integer> v, Iterable<Integer> w) {
 
+        checkParams(v);
+        checkParams(w);
+
         if (v == null || w == null)
             throw new NullPointerException("Input vertices list is null!");
 
-        int l = INFINITY;
-        int a = -1;
+        bfs = bfs.getInstance(g, v, w);
 
-        for (int vI : v) {
-            for (int wJ : w) {
-                if (length(vI, wJ) < l) {
-                    l = length(vI, wJ);
-                    a = ancestor(vI, wJ);
-                }
+        return bfs.getBestAncestor();
+    }
+
+    private void checkParams(Iterable<Integer> params) {
+        for (int param : params) {
+            if (param < 0 || param > g.V()) {
+                throw new IndexOutOfBoundsException();
             }
         }
-
-        return a;
     }
 
     // do unit testing of this class
